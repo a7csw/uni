@@ -5,40 +5,37 @@ const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ✅ MongoDB Atlas connection URI
+const uri = 'mongodb+srv://abdulrahmanalfaiadi:zs6pYQBLbGzjgWmH@cluster0.zesisoe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const client = new MongoClient(uri);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-
-// ✅ MongoDB Atlas connection string
-const MONGO_URI = 'mongodb+srv://abdulrahmanalfaiadi:zs6pYQBLbGzjgWmH@cluster0.zesisoe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 let participantsCollection;
 
 async function startServer() {
   try {
-    const client = new MongoClient(MONGO_URI, {
-      ssl: true,
-    });
-
     await client.connect();
-    const db = client.db('festivalDB');
+    const db = client.db('festival');
     participantsCollection = db.collection('participants');
+    console.log('✅ Connected to MongoDB Atlas');
 
     app.listen(PORT, () => {
-      console.log(`✅ Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   } catch (err) {
     console.error('❌ Failed to connect to MongoDB:', err);
   }
 }
 
-// ✅ Get all participants
+// Routes
 app.get('/participants', async (req, res) => {
   const participants = await participantsCollection.find().toArray();
   res.json(participants);
 });
 
-// ✅ Register new participant
 app.post('/register', async (req, res) => {
   const { name, surname, activity } = req.body;
   if (!name || !surname || !activity) {
@@ -49,14 +46,13 @@ app.post('/register', async (req, res) => {
     name,
     surname,
     activity,
-    createdAt: new Date()
+    createdAt: new Date(),
   };
 
   const result = await participantsCollection.insertOne(newEntry);
   res.status(201).json({ ...newEntry, id: result.insertedId });
 });
 
-// ✅ Delete participant
 app.delete('/participants/:id', async (req, res) => {
   try {
     const idToDelete = req.params.id;
@@ -72,5 +68,5 @@ app.delete('/participants/:id', async (req, res) => {
   }
 });
 
-// ✅ Start the server
+// Start the server
 startServer();
