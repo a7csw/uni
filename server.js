@@ -7,7 +7,16 @@ const PORT = process.env.PORT || 3000;
 
 // MongoDB connection
 const MONGO_URI = "mongodb+srv://abdulrahmanalfaiadi:zs6pYQBLbGzjgWmH@cluster0.zesisoe.mongodb.net/festival?retryWrites=true&w=majority&appName=Cluster0&tls=true";
-const client = new MongoClient(MONGO_URI);
+const client = new MongoClient(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  tls: true,
+  serverApi: {
+    version: '1',
+    strict: true,
+    deprecationErrors: true
+  }
+});
 let participantsCollection;
 
 // Middleware
