@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iraq Festival Registration</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white">
+  <h1 class="text-4xl font-extrabold mb-6 text-center text-green-400 tracking-wide animate__animated animate__fadeInDown">
+    Represent Iraq - Festival Registration
+  </h1>
+
+  <form id="registerForm" class="w-full max-w-md space-y-4 p-6 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
+    <input type="text" id="name" placeholder="First Name / الاسم الأول" dir="auto" class="p-3 w-full rounded bg-gray-900 text-white" required />
+    <input type="text" id="surname" placeholder="Surname / اللقب" dir="auto" class="p-3 w-full rounded bg-gray-900 text-white" required />
+    <input type="text" id="activity" placeholder="What will you do or bring? / ماذا ستفعل أو تجلب؟" dir="auto" class="p-3 w-full rounded bg-gray-900 text-white" required />
+    <button type="submit" class="w-full p-3 rounded bg-green-600 hover:bg-green-700 transition">Submit</button>
+  </form>
+
+  <ul id="participantList" class="mt-8 w-full max-w-md space-y-2"></ul>
+
+  <script src="script.js"></script>
+</body>
+</html>
