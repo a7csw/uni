@@ -5,26 +5,28 @@ const { MongoClient, ObjectId } = require("mongodb");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB connection
-const MONGO_URI = "mongodb+srv://abdulrahmanalfaiadi:zs6pYQBLbGzjgWmH@cluster0.zesisoe.mongodb.net/festival?retryWrites=true&w=majority&appName=Cluster0&tls=true";
+// ✅ MongoDB connection URI (includes /festival DB)
+const MONGO_URI =
+  "mongodb+srv://abdulrahmanalfaiadi:zs6pYQBLbGzjgWmH@cluster0.zesisoe.mongodb.net/festival?retryWrites=true&w=majority&appName=Cluster0";
+
+// ✅ Setup MongoDB client with TLS & stable config
 const client = new MongoClient(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   tls: true,
   serverApi: {
-    version: '1',
+    version: "1",
     strict: true,
-    deprecationErrors: true
-  }
+    deprecationErrors: true,
+  },
 });
+
 let participantsCollection;
 
-// Middleware
+// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// Connect to MongoDB and start the server
+// ✅ Start server after DB connects
 async function startServer() {
   try {
     await client.connect();
@@ -32,24 +34,27 @@ async function startServer() {
     participantsCollection = db.collection("participants");
 
     app.listen(PORT, () => {
-      console.log(`✅ Server running on http://localhost:${PORT}`);
+      console.log(`✅ Server running at http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error("Failed to connect to MongoDB:", err);
+    console.error("❌ Failed to connect to MongoDB:", err);
   }
 }
 
-// Routes
-
-// Get all participants
+// ✅ Get all participants
 app.get("/participants", async (req, res) => {
-  const participants = await participantsCollection.find().toArray();
-  res.json(participants);
+  try {
+    const participants = await participantsCollection.find().toArray();
+    res.json(participants);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch participants" });
+  }
 });
 
-// Register new participant
+// ✅ Add new participant
 app.post("/register", async (req, res) => {
   const { name, surname, activity } = req.body;
+
   if (!name || !surname || !activity) {
     return res.status(400).json({ error: "All fields are required" });
   }
@@ -61,15 +66,22 @@ app.post("/register", async (req, res) => {
     createdAt: new Date(),
   };
 
-  const result = await participantsCollection.insertOne(newEntry);
-  res.status(201).json({ ...newEntry, id: result.insertedId });
+  try {
+    const result = await participantsCollection.insertOne(newEntry);
+    res.status(201).json({ ...newEntry, id: result.insertedId });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to register participant" });
+  }
 });
 
-// Delete participant
+// ✅ Delete participant by ID
 app.delete("/participants/:id", async (req, res) => {
+  const idToDelete = req.params.id;
+
   try {
-    const idToDelete = req.params.id;
-    const result = await participantsCollection.deleteOne({ _id: new ObjectId(idToDelete) });
+    const result = await participantsCollection.deleteOne({
+      _id: new ObjectId(idToDelete),
+    });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: "Participant not found" });
@@ -81,5 +93,5 @@ app.delete("/participants/:id", async (req, res) => {
   }
 });
 
-// Start the server
+// ✅ Launch the server
 startServer();
