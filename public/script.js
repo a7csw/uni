@@ -1,59 +1,70 @@
-const form = document.getElementById("registerForm");
-const list = document.getElementById("participantList");
-
-const API_BASE = "http://localhost:3000";
-
-async function loadParticipants() {
-  const res = await fetch(`${API_BASE}/participants`);
-  const data = await res.json();
-  list.innerHTML = "";
-  data.forEach(addToList);
-}
-
-function addToList({ id, name, surname, activity }) {
-  const li = document.createElement("li");
-  li.className = "p-3 bg-gray-800 rounded animate__animated animate__fadeIn transition hover:bg-green-700 cursor-pointer flex justify-between items-center";
-
-  const info = document.createElement("span");
-  info.innerHTML = `<strong>${name} ${surname}</strong>: ${activity}`;
-  li.appendChild(info);
-
-  const savedIds = JSON.parse(localStorage.getItem("mySubmissions") || "[]");
-  if (savedIds.includes(id)) {
-    const delBtn = document.createElement("button");
-    delBtn.innerText = "🗑️";
-    delBtn.className = "ml-4 text-red-400 hover:text-red-600";
-    delBtn.onclick = async () => {
-      await fetch(`${API_BASE}/participants/${id}`, { method: "DELETE" });
-      li.remove();
-    };
-    li.title = "Click trash icon to delete";
-    li.appendChild(delBtn);
-  }
-
-  list.appendChild(li);
-}
-
-form.addEventListener("submit", async (e) => {
+document.getElementById('registrationForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = document.getElementById("name").value;
-  const surname = document.getElementById("surname").value;
-  const activity = document.getElementById("activity").value;
 
-  const res = await fetch(`${API_BASE}/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, surname, activity }),
-  });
+  const name = document.getElementById('firstName').value.trim();
+  const surname = document.getElementById('surname').value.trim();
+  const activity = document.getElementById('activity').value.trim();
 
-  if (res.ok) {
-    const newParticipant = await res.json();
-    const saved = JSON.parse(localStorage.getItem("mySubmissions") || "[]");
-    saved.push(newParticipant.id);
-    localStorage.setItem("mySubmissions", JSON.stringify(saved));
-    addToList(newParticipant);
-    form.reset();
+  if (!name || !surname || !activity) return;
+
+  try {
+    const res = await fetch('/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, surname, activity })
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      loadParticipants();
+      e.target.reset();
+    } else {
+      alert(result.error || 'Failed to register.');
+    }
+  } catch (error) {
+    console.error('Submit error:', error);
+    alert('Something went wrong.');
   }
 });
 
-loadParticipants();
+async function loadParticipants() {
+  try {
+    const res = await fetch('/participants');
+    const participants = await res.json();
+
+    const list = document.getElementById('participantsList');
+    list.innerHTML = '';
+
+    participants.forEach(p => {
+      const li = document.createElement('li');
+      li.className = 'bg-gray-700 p-3 rounded flex justify-between items-center';
+
+      li.innerHTML = `
+        <span><strong>${p.name} ${p.surname}:</strong> ${p.activity}</span>
+        <button onclick="deleteParticipant('${p._id}')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Delete</button>
+      `;
+      list.appendChild(li);
+    });
+  } catch (error) {
+    console.error('Load error:', error);
+  }
+}
+
+async function deleteParticipant(id) {
+  if (!confirm('Are you sure you want to delete this entry?')) return;
+
+  try {
+    const res = await fetch(`/participants/${id}`, { method: 'DELETE' });
+    const result = await res.json();
+
+    if (res.ok && result.success) {
+      loadParticipants();
+    } else {
+      alert(result.error || 'Failed to delete participant.');
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+  }
+}
+
+window.onload = loadParticipants;
