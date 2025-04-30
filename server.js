@@ -1,60 +1,76 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
+const { MongoClient, ObjectId } = require("mongodb");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, "data.json");
 
+// MongoDB connection
+const MONGO_URI = "mongodb+srv://abdulrahmanalfaiadi:zs6pYQBLbGzjgWmH@cluster0.zesisoe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const client = new MongoClient(MONGO_URI);
+let participantsCollection;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) return [];
-  const data = fs.readFileSync(DATA_FILE);
-  return JSON.parse(data);
+// Connect to MongoDB and start the server
+async function startServer() {
+  try {
+    await client.connect();
+    const db = client.db("festival");
+    participantsCollection = db.collection("participants");
+
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error("Failed to connect to MongoDB:", err);
+  }
 }
 
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
+// Routes
 
-app.get("/participants", (req, res) => {
-  const participants = readData();
+// Get all participants
+app.get("/participants", async (req, res) => {
+  const participants = await participantsCollection.find().toArray();
   res.json(participants);
 });
 
-app.post("/register", (req, res) => {
+// Register new participant
+app.post("/register", async (req, res) => {
   const { name, surname, activity } = req.body;
   if (!name || !surname || !activity) {
     return res.status(400).json({ error: "All fields are required" });
   }
-  const participants = readData();
+
   const newEntry = {
-    id: Date.now().toString(), // Unique ID
     name,
     surname,
-    activity
+    activity,
+    createdAt: new Date(),
   };
-  participants.push(newEntry);
-  writeData(participants);
-  res.status(201).json(newEntry);
+
+  const result = await participantsCollection.insertOne(newEntry);
+  res.status(201).json({ ...newEntry, id: result.insertedId });
 });
 
-app.delete("/participants/:id", (req, res) => {
-  const idToDelete = req.params.id;
-  let participants = readData();
-  const initialLength = participants.length;
-  participants = participants.filter(p => p.id !== idToDelete);
-  if (participants.length === initialLength) {
-    return res.status(404).json({ error: "Not found" });
+// Delete participant
+app.delete("/participants/:id", async (req, res) => {
+  try {
+    const idToDelete = req.params.id;
+    const result = await participantsCollection.deleteOne({ _id: new ObjectId(idToDelete) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Participant not found" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: "Invalid ID format" });
   }
-  writeData(participants);
-  res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+// Start the server
+startServer();
